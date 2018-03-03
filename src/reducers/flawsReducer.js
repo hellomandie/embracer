@@ -2,7 +2,6 @@ import produce from 'immer';
 import initialState from './initialState';
 import * as types from '../constants/actionTypes';
 
-// TODO: Add test
 export default (state = initialState.character.flaws, action) =>
   produce(state, draft => {
     switch (action.type) {
