@@ -1,3 +1,4 @@
+import produce from 'immer';
 import initialState from './initialState';
 import * as types from '../constants/actionTypes';
 import {
@@ -19,60 +20,49 @@ const getMaxDots = affinity =>
     ? outOfClanDisciplineLevelLimit
     : standardTraitMaxDots;
 
-export default (state = initialState.character.disciplines, action) => {
-  let category, trait, startingDots, affinity, maxDots;
+export default (state = initialState.character.disciplines, action) =>
+  produce(state, draft => {
+    let category, trait, startingDots, affinity, maxDots;
 
-  switch (action.type) {
-    case types.SET_STARTING_DOTS:
-      ({ category, trait, startingDots } = action.payload);
+    switch (action.type) {
+      case types.SET_STARTING_DOTS:
+        ({ category, trait, startingDots } = action.payload);
 
-      if (!isDisciplines(category)) {
-        return state;
-      }
+        if (isDisciplines(category)) {
+          affinity = getAffinity(category);
+          maxDots = getMaxDots(affinity);
 
-      affinity = getAffinity(category);
-      maxDots = getMaxDots(affinity);
+          draft[affinity] = setDotsFromStartingDots(
+            draft[affinity],
+            trait,
+            startingDots,
+            maxDots
+          );
+        }
+        break;
+      case types.PURCHASE_DOT:
+        ({ category, trait } = action.payload);
 
-      return {
-        ...state,
-        [affinity]: setDotsFromStartingDots(
-          state[affinity],
-          trait,
-          startingDots,
-          maxDots
-        )
-      };
-    case types.PURCHASE_DOT:
-      ({ category, trait } = action.payload);
+        if (isDisciplines(category)) {
+          affinity = getAffinity(category);
+          maxDots = getMaxDots(affinity);
 
-      if (!isDisciplines(category)) {
-        return state;
-      }
+          draft[affinity] = addPurchasedDot(draft[affinity], trait, maxDots);
+        }
+        break;
+      case types.UNPURCHASE_DOT:
+        ({ category, trait } = action.payload);
 
-      affinity = getAffinity(category);
-      maxDots = getMaxDots(affinity);
+        if (isDisciplines(category)) {
+          affinity = getAffinity(category);
 
-      return {
-        ...state,
-        [affinity]: addPurchasedDot(state[affinity], trait, maxDots)
-      };
-    case types.UNPURCHASE_DOT:
-      ({ category, trait } = action.payload);
-
-      if (!isDisciplines(category)) {
-        return state;
-      }
-
-      affinity = getAffinity(category);
-
-      return {
-        ...state,
-        [affinity]: removePurchasedDot(state[affinity], trait)
-      };
-    case types.UPDATE_CLAN:
-      // reset
-      return initialState.character.disciplines;
-    default:
-      return state;
-  }
-};
+          draft[affinity] = removePurchasedDot(draft[affinity], trait);
+        }
+        break;
+      case types.UPDATE_CLAN:
+        // reset
+        return initialState.character.disciplines;
+      default:
+        break;
+    }
+  });
