@@ -1,3 +1,4 @@
+import produce from 'immer';
 import initialState from './initialState';
 import * as types from '../constants/actionTypes';
 import {
@@ -5,39 +6,33 @@ import {
   moralityStartingDotsHumanity,
   moralityStartingDotsPath
 } from '../constants/characterOptions';
-import { removeProperty } from '../utils/objectUtils';
 
-export default (state = initialState.character.morality, action) => {
-  switch (action.type) {
-    case types.PURCHASE_MORALITY_DOT:
-      if (state.dotsPurchased || state.path !== humanity) {
-        return state;
-      }
+export default (state = initialState.character.morality, action) =>
+  produce(state, draft => {
+    switch (action.type) {
+      case types.PURCHASE_MORALITY_DOT:
+        if (!draft.dotsPurchased && draft.path === humanity) {
+          draft.dotsPurchased = 1;
+        }
+        break;
+      case types.UNPURCHASE_MORALITY_DOT:
+        if (draft.dotsPurchased) {
+          delete draft.dotsPurchased;
+        }
+        break;
+      case types.UPDATE_MORALITY:
+        const { path, meritPoints } = action.payload;
 
-      return {
-        ...state,
-        dotsPurchased: 1
-      };
-    case types.UNPURCHASE_MORALITY_DOT:
-      if (!state.dotsPurchased) {
-        return state;
-      }
-
-      return removeProperty(state, 'dotsPurchased');
-    case types.UPDATE_MORALITY:
-      const { path, meritPoints } = action.payload;
-
-      if (state.path === path) {
-        return state;
-      }
-
-      return path === humanity
-        ? { path: humanity, startingDots: moralityStartingDotsHumanity }
-        : { path, meritPoints, startingDots: moralityStartingDotsPath };
-    case types.UPDATE_CLAN:
-      // reset due to clan affinities with paths
-      return initialState.character.morality;
-    default:
-      return state;
-  }
-};
+        if (draft.path !== path) {
+          return path === humanity
+            ? { path: humanity, startingDots: moralityStartingDotsHumanity }
+            : { path, meritPoints, startingDots: moralityStartingDotsPath };
+        }
+        break;
+      case types.UPDATE_CLAN:
+        // reset due to clan affinities with paths
+        return initialState.character.morality;
+      default:
+        break;
+    }
+  });
