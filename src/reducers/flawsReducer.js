@@ -1,16 +1,25 @@
+import produce from 'immer';
 import initialState from './initialState';
 import * as types from '../constants/actionTypes';
 
-export default (state = initialState.character.flaws, action) => {
-  switch (action.type) {
-    case types.ADD_FLAW:
-      const newState = state.slice();
-      newState.push(action.payload);
-      return newState;
-    case types.REMOVE_FLAW:
-      const { name } = action.payload;
-      return state.filter(x => x.name !== name);
-    default:
-      return state;
-  }
-};
+// TODO: Add test
+export default (state = initialState.character.flaws, action) =>
+  produce(state, draft => {
+    switch (action.type) {
+      case types.ADD_FLAW:
+        draft.push(action.payload);
+        break;
+      case types.REMOVE_FLAW:
+        const { name } = action.payload;
+
+        for (let i = 0; i < draft.length; i++) {
+          if (draft[i].name === name) {
+            draft.splice(i, 1);
+            break;
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  });
